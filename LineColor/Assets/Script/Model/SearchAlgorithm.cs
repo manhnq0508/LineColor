@@ -8,21 +8,21 @@ namespace LeePathSearchAlgorithm
     public class PathSearchLee
     {
         Point[] modificationCells4Path = new Point[]{
-            new Point(-1,0),//слева
-            new Point(1,0),//справа,
-            new Point(0,1),//сверху
-            new Point(0,-1),//снизеу
+            new Point(-1,0),//left
+            new Point(1,0),//on right
+            new Point(0,1),//above
+            new Point(0,-1),//will lower
         };
 
         Point[] modificationCells8Path = new Point[]{
-            new Point(-1,0),//слева
-            new Point(-1,-1),//слева сверху
-            new Point(-1,1),//слева снизу
-            new Point(1,0),//справа,
-            new Point(1,-1),//справа сверху
-            new Point(1,1),//справа снизу
-            new Point(0,1),//снизу
-            new Point(0,-1),//сверху
+            new Point(-1,0),//left
+            new Point(-1,-1),//top left
+            new Point(-1,1),//bottom left
+            new Point(1,0),//on right
+            new Point(1,-1),//top right
+            new Point(1,1),//bottom right
+            new Point(0,1),//from below
+            new Point(0,-1),//above
         };
 
         Point[] modificationCells;
@@ -38,7 +38,7 @@ namespace LeePathSearchAlgorithm
                     modificationCells = modificationCells8Path;
                     break;
                 default:
-                    throw new InvalidEnumArgumentException("Неизвестный режим " + ((int)method).ToString());
+                    throw new InvalidEnumArgumentException("Unknown mode " + ((int)method).ToString());
             }
         }
 
