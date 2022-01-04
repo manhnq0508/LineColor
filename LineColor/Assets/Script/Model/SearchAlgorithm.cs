@@ -57,9 +57,9 @@ namespace LeePathSearchAlgorithm
             if (map[end.X, end.Y] != 0)
                 return new Point[0];
             if (!IsValidCoordinates(start, width, height))
-                throw new Exception("Стартовая точка находится вне карты");
+                throw new Exception("The point out side");
             if (!IsValidCoordinates(end, width, height))
-                throw new Exception("Конечная точка находится вне карты");
+                throw new Exception("The point out side");
             if (!IsDestinationPotentiallyReachable(map, end))
                 return new Point[0];
 
@@ -163,8 +163,8 @@ namespace LeePathSearchAlgorithm
 
         public enum SearchMethod
         {
-            Path4 = 1, //только горизонтальные и вертикальные пути
-            Path8 = 2 //ищем и диагональные пути
+            Path4 = 1, //only horizontal and vertical paths
+            Path8 = 2 //looking for diagonal paths
         }
     }
 }
