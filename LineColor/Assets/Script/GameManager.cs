@@ -339,4 +339,7 @@ public class GameManager : MonoBehaviour
         Score += result.Score;
         return result.Points.Count;
     }
+    public void QuitGame(){
+        Application.Quit();
+    }
 }
