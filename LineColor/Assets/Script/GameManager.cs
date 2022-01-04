@@ -7,8 +7,9 @@ using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     // Start is called before the first frame update
+    public int counterBig = 0;
     public GameObject[] balls;
-    private Queue<GameObject> predictBall = new Queue<GameObject>();
+    private List<GameObject> predictBall = new List<GameObject>();
     public GameObject[] smallballs;
     public BallBehaviour[] ballBehaviours;
     BallBehaviour currentBall;
@@ -18,12 +19,41 @@ public class GameManager : MonoBehaviour
     public Sprite[] PredictionBallSprite;
 
     PathSearchLee pathSearch; 
-    bool showPath;
+
     readonly int[] NextBalls = new int[3];
     Point[] ballPLace = new Point[3];
     int [,] MapFinding = new int[9,9];
     int [,] MapPredict = new int[9,9];
-    
+    public Text HighScoreText;
+    public Text ScoreText;
+    public GameObject playButton;
+    public GameObject gameOver;
+    private int HighScore;
+
+    int score{ get; set;}
+    int Score{
+        get{
+            return score;
+        }
+        set{
+            score = value;
+            ScoreText.text = score.ToString();
+            UpdatehighScore();
+        }
+    }
+    public void UpdatehighScore(){
+        if(Score > HighScore){
+            HighScore = Score;
+        }
+        HighScoreText.text = HighScore.ToString();
+    }
+    void Start(){
+        gameOver.SetActive(false);
+        ReStartGame();
+    }
+    public void GameOver(){
+        gameOver.SetActive(true);
+    }
     void Awake(){
         pathSearch = new PathSearchLee(PathSearchLee.SearchMethod.Path4);
         for(int i = 0; i < 3; i++){
@@ -33,13 +63,15 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < balls.Length; i++){
             ballBehaviours[i] = balls[i].GetComponent<BallBehaviour>();
         }
+        
 
     }
-    void Start(){
+    public void PlayButtonOnClick(){
         ReStartGame();
     }
     void ReStartGame(){
-        for(int i = 0; i < 0; i++){
+        Score = 0;
+        for(int i = 0; i < 9; i++){
             for (int j = 0 ; j < 9;j++){
                 if(BoardManage.Instance.field[i,j] != null){
                     BoardManage.Instance.field[i,j].Die();
@@ -47,24 +79,26 @@ public class GameManager : MonoBehaviour
                 BoardManage.Instance.field[i,j] = null;
             }
         }
-        StartCoroutine(RestartGameComplete());
+        foreach (var ball in predictBall){
+            Destroy(ball);
+        }      
+        RestartGameComplete();
     }
-    IEnumerator RestartGameComplete(){
-        yield return new WaitForSeconds(0.2f);
-        for( int i = 0; i < 5; i++){
-            Create5BallInRandomPlace();
+    void RestartGameComplete(){
+        for( int i = 0; i < 6; i++){
+            Create6BallInRandomPlace();
         }
         UpdateNextBalls();
     }
-    private void Create5BallInRandomPlace(int nextBalls = -1){
-        var x = Random.Range(0, 8);
-        var y = Random.Range(0, 8);
+    private void Create6BallInRandomPlace(int nextBalls = -1){
+        var x = Random.Range(0, 9);
+        var y = Random.Range(0, 9);
         int counter = 0;
         while (BoardManage.Instance.field[x, y] != null)
         {
             counter++;
-            x = Random.Range(0,8);
-            y = Random.Range(0,8);
+            x = Random.Range(0,9);
+            y = Random.Range(0,9);
             if(counter == 5){
                 break;
             }
@@ -85,20 +119,21 @@ public class GameManager : MonoBehaviour
     private BallBehaviour CreateBall(int x, int y, int ballValue = -1){
         var pos = BoardManage.Instance.GetPos(x,y);
         if(ballValue == -1){
-            ballValue = Random.Range(0, balls.Length - 1);
+            ballValue = Random.Range(0, balls.Length);
         }
-        Debug.Log("Big"+ ballValue + x +" "+ y );
+
         var ball = Instantiate(balls[ballValue], pos, Quaternion.identity);
         var component = ball.GetComponent<BallBehaviour>();
         return component;
     }   
     private void InitNextBalls(){
         for (int i = 0; i < 3; i++){
-            NextBalls[i] = ballBehaviours[Random.Range(0,ballBehaviours.Length - 1)].BallCode ;
+            NextBalls[i] = ballBehaviours[Random.Range(0,ballBehaviours.Length)].BallCode ;
         } 
     }
 
     private void UpdateNextBalls(){
+
         InitNextBalls();
         for (int i = 0; i < 3; i++){
             BallNextSpriteRenderer[i].sprite = PredictionBallSprite[NextBalls[i]];
@@ -111,7 +146,6 @@ public class GameManager : MonoBehaviour
             for (int j = 0; j < 9;j++){
                 if(BoardManage.Instance.field[i,j] != null){
                     MapPredict[i,j] = 1;
-                    Debug.Log("X = " + i + " Y = " + j);
                 }
                 else{
                     MapPredict[i,j] = 0;
@@ -120,30 +154,48 @@ public class GameManager : MonoBehaviour
         }
     }
     private void Create3BallPlace(){
-        Create3BallRandomPredictPlace();
+
+        Create3PredictRandomPlace();
         for (int i = 0; i < 3; i++){
             CreateBallPredict(ballPLace[i].X,ballPLace[i].Y,NextBalls[i]);
-            Debug.Log("small " + NextBalls[i] +" X = "+ ballPLace[i].X + " Y = " + ballPLace[i].Y);
         }
     }
-    private void Create3BallRandomPredictPlace(){
+    private void Create3PredictRandomPlace(){
         Mapstate();
-        var x = Random.Range(0, 8);
-        var y = Random.Range(0, 8);
-        int counter = 3;
-        int id = 0;
-        while (counter > 0)
-        {
-            if(MapPredict[x,y] == 0){
-                MapPredict[x,y] = 1;
-                ballPLace[id] = new Point(x,y);
-                id++;
-                counter--;
-            }
-            x = Random.Range(0, 8);
-            y = Random.Range(0, 8);
-        }        
+        for (int i = 0; i < 3; i++){
+            CreateRandomPredictPlace(i);
+        }
     }
+    private void CreateRandomPredictPlace(int ballCount){
+        var x = Random.Range(0, 9);
+        var y = Random.Range(0, 9);
+        int counter = 0;
+        while (MapPredict[x, y] != 0)
+        {
+            counter++;
+            x = Random.Range(0,9);
+            y = Random.Range(0,9);
+            if(counter == 5){
+                break;
+            }
+        }
+        if (MapPredict[x,y] == 0){
+            ballPLace[ballCount] = new Point(x,y);
+            MapPredict[x,y] = 1;
+            return;
+        }
+        for ( int i = 0 ; i < 9; i++){
+            for (int j = 0; j < 9;j++){
+                if(MapPredict[i,j] == 0){
+                    ballPLace[ballCount] = new Point(i,j);
+                    MapPredict[i,j] = 1;
+                    return;
+                }
+            }
+        }
+
+    }
+
 
     private void CreateBallPredict(int x, int y, int ballValue = -1){
         var pos = BoardManage.Instance.GetPos(x,y);
@@ -151,7 +203,7 @@ public class GameManager : MonoBehaviour
             ballValue = Random.Range(0, balls.Length);
         }
         var ball = Instantiate(smallballs[ballValue], pos, Quaternion.identity);
-        predictBall.Enqueue(ball);
+        predictBall.Add(ball);
     }
 
 
@@ -172,14 +224,18 @@ public class GameManager : MonoBehaviour
             currentBall = BoardManage.Instance.field[currentBallPoint.X,currentBallPoint.Y];
             if(currentBall != null){
                 // appear 
+                currentBall.setScaleSmall();
+
                 Debug.Log(currentBall.BallCode);
             }
             if(currentBall != null && oldBall != null && oldBall != currentBall){
-                //old ball stop jump
+
+                oldBall.ScaleBig();
+                currentBall.setScaleSmall();
                 Debug.Log("Click 2");
             }
             if (currentBall == null && oldBall != null){
-
+                oldBall.ScaleBig();
                 var successMoveToNewPosition = MoveToNewPosition(oldBall,oldBallPoint,currentBallPoint);
                 if(successMoveToNewPosition){
                     //UpdateNextBalls();
@@ -208,7 +264,6 @@ public class GameManager : MonoBehaviour
         var resultPath = pathSearch.Search(MapFinding, Start, End);
         if(resultPath.Any()){
             oldBall.MoveByPath(resultPath.Select(pathStep => BoardManage.Instance.GetPos(pathStep.X, pathStep.Y)).ToArray());
-            Debug.Log("AAAAAAAAAAAAAAAAAAAAAAaaa");
             StartCoroutine(AfterMovedToNewPosition(oldBall, Start, End));
             return true;
         }
@@ -221,25 +276,36 @@ public class GameManager : MonoBehaviour
 
         BoardManage.Instance.field[end.X, end.Y] = BoardManage.Instance.field[start.X, start.Y];
         BoardManage.Instance.field[start.X, start.Y] = null;
-        BallUpdate();
-        UpdateNextBalls();
-        yield return new WaitForSeconds(0.05f);
-        
+        var deletedCount = AddScoreAndRemoveBalls();
+        if(deletedCount == 0){
+            BallUpdate();
+            UpdateNextBalls();
+        }
+        else{
+            yield return new WaitForSeconds(0.05f);
+        }
+        // BallUpdate();
+        // UpdateNextBalls();
+        CheckGameOver();
+        // yield return new WaitForSeconds(0.05f);
     }
     private void BallUpdate(){
-        for ( int i = 0; i < 3;i++){
-            DeleteSmallBallAddNewBall(ballPLace[i],NextBalls[i]);
-            predictBall.Dequeue();
+        int i = 0;
+        foreach (var ball in predictBall){
+            AddNewBall(ballPLace[i],NextBalls[i]);
+            i++;
+            Destroy(ball);
         }
+        predictBall = new List<GameObject>();
     }
-    private void DeleteSmallBallAddNewBall(Point smallPoint , int smallBallId){
+    private void AddNewBall(Point smallPoint , int smallBallId){
         if(BoardManage.Instance.field[smallPoint.X,smallPoint.Y] == null){     
             BoardManage.Instance.field[smallPoint.X,smallPoint.Y] = CreateBall(smallPoint.X, smallPoint.Y, smallBallId);
         }
         else{
             for(int i = 0; i < 9; i++){
                 for(int j = 0; j < 9;j++){
-                    if(BoardManage.Instance.field[i,j] = null){
+                    if(BoardManage.Instance.field[i,j] == null){
                         BoardManage.Instance.field[i,j] = CreateBall(i, j, smallBallId);
                         return;
                     }
@@ -247,5 +313,30 @@ public class GameManager : MonoBehaviour
             }
         }
         
+    }
+    private void CheckGameOver(){
+        bool haveEmptySpace = false;
+        for (int i = 0; i < 9; i++){
+            for (int j = 0; j < 9; j++){
+                if(BoardManage.Instance.field[i,j] == null){
+                    haveEmptySpace = true;
+                }
+            }
+        }
+        if(!haveEmptySpace){
+            GameOver();
+        }
+    }
+    private int AddScoreAndRemoveBalls(){
+        var result = LineSearcher.SearchBy(BoardManage.Instance.field);
+        foreach (var point in result.Points){
+            var ball = BoardManage.Instance.field[point.X,point.Y];
+            if(ball != null){
+                ball.Die();
+            }
+            BoardManage.Instance.field[point.X,point.Y] = null;
+        }
+        Score += result.Score;
+        return result.Points.Count;
     }
 }
